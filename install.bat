@@ -31,7 +31,8 @@ if "%3"=="" (
 )
 
 REM Get pypi info and login token
-for /f "delims=" %%a in ('aws sts get-caller-identity --query "Account" --output text') do set ACCOUNT_ID=%%a
+for /f "delims=" %%a in ('aws sts get-caller-identity --query "Account" --output text') do set ACCOUNT_ID=%%a 
+set ACCOUNT_ID=%ACCOUNT_ID: =%
 for /f "delims=" %%a in ('aws codeartifact get-authorization-token --domain acap-dev-support --domain-owner %ACCOUNT_ID% --region eu-north-1 --query authorizationToken --output text') do set CODEARTIFACT_AUTH_TOKEN=%%a
 set INDEX_URL=https://aws:%CODEARTIFACT_AUTH_TOKEN%@acap-dev-support-%ACCOUNT_ID%.d.codeartifact.eu-north-1.amazonaws.com/pypi/acap-dev-support/simple/
 
