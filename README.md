@@ -4,9 +4,12 @@ Creating ACAP applications for AXIS network cameras has never been easier! FApp 
 ## Installation
 FApp CLI is implemented in Python and can be installed with e.g. pip from our AWS pypi repository. There are no other dependencies than Python, listed Python packages, SSH, and [Docker](https://docs.docker.com/engine/install/) needed. To access the package from AWS pypi you will need to have the [AWS CLI installed](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
 
+This repository contains scripts that can be used to install `fappcli`. You can download the script you need from the browser, or clone the repo.
+
 ### Linux / MacOS
 The tool can be installed using our AWS pypi. We recommend to first activate a Python environment using e.g. pyenv or Python Virtualenv since this script will install the fappcli tool in the currently used Python environment. You need a valid token to give you access. Run the following, replacing `<AWS_ACCESS_KEY_ID>` and `<AWS_SECRET_ACCESS_KEY>` with your private keys that you have received from us.
 ```bash
+chmod +x ./install.sh
 ./install.sh <AWS_ACCESS_KEY_ID> <AWS_SECRET_ACCESS_KEY>
 ```
 
