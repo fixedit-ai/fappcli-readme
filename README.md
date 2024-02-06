@@ -1,6 +1,52 @@
 # Fappcli
 Creating ACAP applications for AXIS network cameras has never been easier! FApp is a set of tools, libraries and templates that can be used to create and build ACAP applications.
 
+Table of content:
+- [Fappcli](#fappcli)
+   * [Installation](#installation)
+      + [Linux / MacOS](#linux--macos)
+      + [Windows](#windows)
+   * [Uninstallation](#uninstallation)
+   * [Configuration](#configuration)
+      + [Creating the configuration file](#creating-the-configuration-file)
+         - [Linux](#linux)
+         - [MacOS](#macos)
+         - [Windows](#windows-1)
+      + [Adding configuration to the file](#adding-configuration-to-the-file)
+      + [Configuring SSH in the camera](#configuring-ssh-in-the-camera)
+         - [Setting up passwordless SSH](#setting-up-passwordless-ssh)
+            * [Linux / MacOS](#linux--macos-1)
+            * [Windows](#windows-2)
+      + [Handling invalid SSL certificates](#handling-invalid-ssl-certificates)
+      + [Testing the configuration](#testing-the-configuration)
+   * [Usage](#usage)
+      + [The fapp-manifest.json file](#the-fapp-manifestjson-file)
+      + [Common options](#common-options)
+      + [Coloring of output text](#coloring-of-output-text)
+      + [Build an application](#build-an-application)
+         - [Different build styles](#different-build-styles)
+            * [The Axis-styled builds](#the-axis-styled-builds)
+            * [The FixedIT-styled builds](#the-fixedit-styled-builds)
+         - [Selecting the SDK and base image](#selecting-the-sdk-and-base-image)
+         - [Making use of prebuilt libraries](#making-use-of-prebuilt-libraries)
+         - [Debugging failed builds](#debugging-failed-builds)
+         - [Adding extra files](#adding-extra-files)
+      + [List FixedIT precompiled library versions](#list-fixedit-precompiled-library-versions)
+      + [Validate an .eap file](#validate-an-eap-file)
+      + [List connected devices](#list-connected-devices)
+      + [Install an application in the camera](#install-an-application-in-the-camera)
+      + [Run an application](#run-an-application)
+   * [Troubleshoting](#troubleshoting)
+      + [denied: Your authorization token has expired. Reauthenticate and try again.](#denied-your-authorization-token-has-expired-reauthenticate-and-try-again)
+      + [There is no build.log file created when building](#there-is-no-buildlog-file-created-when-building)
+      + [Getting InvalidSignatureException when listing libraries](#getting-invalidsignatureexception-when-listing-libraries)
+      + [Error about SDK not being available for the architecture](#error-about-sdk-not-being-available-for-the-architecture)
+   * [Changelog](#changelog)
+      + [0.3.0](#030)
+      + [0.2.0](#020)
+      + [0.1.0](#010)
+      + [0.0.2](#002)
+
 ## Installation
 FApp CLI is implemented in Python and can be installed with e.g. pip from our AWS pypi repository. There are no other dependencies than Python, listed Python packages, SSH, and [Docker](https://docs.docker.com/engine/install/) needed. To access the package from AWS pypi you will need to have the [AWS CLI installed](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
 
@@ -30,7 +76,7 @@ fappcli-config --help
 
 Note that if you installed the command in a Python environment, the command will only exist if you have that environment activated.
 
-### Windows cmd
+### Windows
 The `install.bat` script can be used to install fappcli in a cmd-prompt. We recommend to first activate a Python environment using e.g. Conda since this script will install the fappcli tool in the currently used Python environment. You need a valid token to give you access. Run the following command, replacing the two keys with your private keys that you have received from us:
 ```cmd
 .\install.bat <AWS_ACCESS_KEY_ID> <AWS_SECRET_ACCESS_KEY>
@@ -64,10 +110,27 @@ For a full clean-up, you can also remove the `.fapp` config file in the location
 ## Configuration
 The next step is to configure the FApp CLI tool. Some functionality, like building applications that do not use the FixedIT prebuilt libraries, will work without any further configuration, while other functionality such as installing applications in the camera or using our precompiled libraries will not work without more configuration. The configuration of the tool is done in a json file named `.fapp`, but the location where the tool looks for the file differs depending on the OS.
 
+You can always show the currently used configuration by running `fappcli-config show`, before anything is set up it will look something like this:
+```
+INFO: Using config file at '/home/danielfa/.fapp' (default)
+INFO: Merged config:
+{
+    "application": {},
+    "template": {
+        "base_dir": "cookiecutter/"
+    }
+}
+```
+The first line indicates the source of the configuration, this is the file that you will edit. Depending on how you have configured the tool, there might be multiple sources listed. These sources will override each other and the merged config that is what the tool actually use can be seen after the second line. Any passwords or secrets configured in the file will be masked before printing them.
+
 ### Creating the configuration file
+From the beginning, the default config file will not exist. You need to create it.
 
 #### Linux
 In Linux, the location of the FApp CLI file is in your home directory `~/.fapp` (i.e. `/home/<USERNAME>/.fapp`). Note that the file does not have a type suffix / file name extension.
+
+#### MacOS
+In MacOS, the location of the FApp CLI file is in your home directory `~/.fapp` (i.e. `/Users/<USERNAME>/.fapp`). Note that the file does not have a type suffix / file name extension.
 
 #### Windows
 In Windows, the location of the FApp CLI file is in your home folder, e.g. `C:\Users\<USERNAME>\.fapp`. Note that the file does not have a file name extension, the default in Windows is that the extension of text files defaults to `.txt` and is not shown to the user, therefore you might need to check the `Select file name extension` box in the folder's view settings.
@@ -129,7 +192,7 @@ Some commands in the FApp CLI tool use SSH. This means that you must make sure t
 #### Setting up passwordless SSH
 Passwordless SSH can be set up by installing your RSA SSH key in the camera. If this is done, and the username is configured in the SSH config file, the FApp CLI tool will be able to use the camera even if the credentials section is omited in the `.fapp` config file. Setting up passwordless camera access like this currently does not work if the camera is set to not allow SSH as the root user.
 
-##### Linux
+##### Linux / MacOS
 When using passwordless SSH, you need to specify the camera's username in your SSH config file which can be found at the `~/.ssh/config` path. This file could e.g. look like this, where `<CAMERA_IP>` is substituted:
 ```
 Host <CAMERA_IP>
@@ -167,6 +230,14 @@ ssh <SSH_HOST> "echo $publicKey >> ~/.ssh/authorized_keys"
 ```
 
 You can now try to SSH to the device by typing `ssh <SSH_HOST>` which should open a shell in the camera without asking for password. When this is working, you can omit the `credentials` section from the camera configuration in the `.fapp` file.
+
+### Handling invalid SSL certificates
+The tool will use encrypted HTTPS to connect to the camera. By default, the Axis cameras has selfsigned certificates. If you have not changed the certificates or added the certificate as a trusted certificate, then the tool will refuse to connect to the camera with an message like this:
+```
+ERROR: Could not connect to camera <CAMERA_NAME>: Could not connect to camera at https://<CAMERA_IP> using VAPIX, invalid SSL certificate
+```
+If you want to continue anyway, add the `--insecure` option to the command.
+
 
 ### Testing the configuration
 You can verify that the FApp CLI tool has picked up your configuration by running the following command:
@@ -624,9 +695,41 @@ mv ~/.docker/config.json ~/.old.docker.config.json
 This is only created for [The FixedIT-styled builds](#the-fixedit-styled-builds). Verify that you do not build the `.eap` file (with `acap-build`) in the Dockerfile or in any other way have an `.eap` in the Docker image.
 
 ### Getting InvalidSignatureException when listing libraries
-This is an issue with the ECR signature. The most likely reason is that your computers time is not correctly set which might lead to certificate validation problems.
+This is an issue with the ECR signature. The most likely reason is that your computers time is not correctly set which might lead to certificate validation problems. Make sure that your computers time is correctly synced and try again.
 
-### Changelog
+### Error about SDK not being available for the architecture
+The ACAP SDK image is only available for x86 computers. If you are running the build on another computer such as a MAC M1 with the ARM64 CPU, then you need to run the image virtualized. This is mostly handled automatically by Docker, but in some cases you might need to manually specify the platform that the Docker image should be fetched for with the `--force-docker-platform` option:
+```bash
+fappcli-build build hello_world/ --force-docker-platform linux/amd64
+```
+
+This applies if you get an error like this:
+```
+ERROR: Output from docker image build: no matching manifest for linux/<HOST_ARCH> in the manifest list entries
+```
+
+## Changelog
+
+### 0.3.0
+- Fix bug with formatting of `FAPP_BIN_NAME` if it contains upper case characters
+- Fix bug with naming of container when using `--build-image-only`
+- [BREAKING CHANGE] Fix bug where the path to the `fapp-manifest` was relative to CWD, not the build dir
+- Fix bug with parsing of the Docker build output that happened mostly on Windows
+- Fix bug with connection issue during cleanup when proxying camera over SSH
+- Refactor camera connection test to better indicate errors such as SSL validation issues
+- Fix bug with output coloring in CI/CD systems
+- Better handling of invalid configuration in `~/.fapp` config file
+- Fixes on architecture check when selecting a camera and building an ACAP
+- Better handling of error messages when retrying after lost connection to camera
+- Add option to specify the name of the Dockerfile to use (`--dockerfile-name`) when building an ACAP
+- Add option to specify the target in the Dockerfile to use when building an ACAP (`--docker-target`)
+- [BREAKING CHANGE] Remove support for undocumented legacy build targets with `app-package`, instead use `--docker-target` if needed
+- [BREAKING CHANGE] Do not force platform when building images, this enables virtualized build with e.g. QEMU, if forcing platform is needed, then use the new `--force-platform` option
+- Fix bug with `--extra-package-files` overwriting the configuration from the `fapp-manifest`, now it will instead extend the list
+- Change logging of unused arguments in Docker build from error to warning as this might be expected when using the arguments during the `acap-build` step instead, to suppress warning, add an `ARG` statement in the Dockerfile
+- Write the path to the config files used in the `fappcli-config show` command
+- Handle some stack traces to print more descriptive error messages
+- Add error message with instructions how to handle known issue with Docker login
 
 ### 0.2.0
 - Initial release for Windows
